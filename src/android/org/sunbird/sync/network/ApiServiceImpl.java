@@ -25,12 +25,9 @@ public class ApiServiceImpl implements ApiService{
 
     @Override
     public HttpResponse process(Request request) {
-//        HttpOperation httpOperation = new HttpOperation(request.getType(), request.getHost() + request.getPath(),
-//                request.getSerializer(), request.getBody(), request.getHeaders(), this.tlsConfiguration);
-
-        CordovaHttpBaseNew httpOperationNew = new CordovaHttpBaseNew(request.getType(), request.getHost() + request.getPath(),
-                request.getSerializer(), request.getBody(), request.getHeaders(), 60000, true, "text",this.tlsConfiguration);
-        return httpOperationNew.run();
+        HttpOperation httpOperation = new HttpOperation(request.getType(), request.getHost() + request.getPath(),
+                request.getSerializer(), request.getBody(), request.getHeaders(), this.tlsConfiguration);
+        return httpOperation.execute();
     }
 
     private void initializeTTLConfiguraion() {

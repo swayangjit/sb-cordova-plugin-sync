@@ -25,8 +25,7 @@
        <source-file src="src/android/org/sunbird/sync/model/NetworkQueueModel.java" target-dir="src/org/sunbird/sync/model" />
        <source-file src="src/android/org/sunbird/sync/model/Request.java" target-dir="src/org/sunbird/sync/model" />
        <source-file src="src/android/org/sunbird/sync/network/ApiService.java" target-dir="src/org/sunbird/sync/network" />
-       <source-file src="src/android/org/sunbird/sync/network/ApiServiceImpl.java" target-dir="src/org/sunbird/sync" />
-       <source-file src="src/android/org/sunbird/sync/network/CordovaHttpBaseNew.java" target-dir="src/org/sunbird/sync/network" />
+       <source-file src="src/android/org/sunbird/sync/network/ApiServiceImpl.java" target-dir="src/org/sunbird/sync/network" />
        <source-file src="src/android/org/sunbird/sync/network/HttpOperation.java" target-dir="src/org/sunbird/sync/network" />
        <source-file src="src/android/org/sunbird/sync/queue/NetworkQueue.java" target-dir="src/org/sunbird/sync/queue" />
        <source-file src="src/android/org/sunbird/sync/queue/NetworkQueueImpl.java" target-dir="src/org/sunbird/sync/queue" />
