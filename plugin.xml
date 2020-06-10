@@ -29,8 +29,8 @@
        <source-file src="src/android/org/sunbird/sync/network/HttpOperation.java" target-dir="src/org/sunbird/sync/network" />
        <source-file src="src/android/org/sunbird/sync/queue/NetworkQueue.java" target-dir="src/org/sunbird/sync/queue" />
        <source-file src="src/android/org/sunbird/sync/queue/NetworkQueueImpl.java" target-dir="src/org/sunbird/sync/queue" />
-       <source-file src="src/android/org/sunbird/sync/preference/PreferenceService.java" target-dir="src/org/sunbird/sync/queue/preference" />
-       <source-file src="src/android/org/sunbird/sync/preference/PreferenceServiceImpl.java" target-dir="src/org/sunbird/sync/queue/preference" />
+       <source-file src="src/android/org/sunbird/sync/preference/PreferenceService.java" target-dir="src/org/sunbird/sync/preference" />
+       <source-file src="src/android/org/sunbird/sync/preference/PreferenceServiceImpl.java" target-dir="src/org/sunbird/sync/preference" />
     </platform>
 </plugin>
 
