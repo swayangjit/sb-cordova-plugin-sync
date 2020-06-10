@@ -9,7 +9,7 @@ public interface NetworkQueue {
 
     void seed();
 
-    NetworkQueueModel dequeue();
+    NetworkQueueModel dequeue(boolean isSoft);
 
     NetworkQueueModel peek();
 

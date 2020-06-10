@@ -53,11 +53,13 @@ public class NetworkQueueImpl implements NetworkQueue {
     }
 
     @Override
-    public NetworkQueueModel dequeue() {
+    public NetworkQueueModel dequeue(boolean isSoft) {
         if (mPriorityNetworkModelQueue != null) {
             try {
                 NetworkQueueModel networkQueueModel = mPriorityNetworkModelQueue.poll();
-                mDbService.delete(networkQueueModel.getId());
+                if(!isSoft){
+                    mDbService.delete(networkQueueModel.getId());
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

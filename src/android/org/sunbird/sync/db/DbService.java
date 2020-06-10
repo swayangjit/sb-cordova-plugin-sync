@@ -10,6 +10,7 @@ import org.json.JSONObject;
 public interface DbService {
     JSONArray seed() throws JSONException;
     long insert(JSONObject request) throws JSONException;
-    int delete(String id) throws  JSONException;
+    long delete(String id) throws  JSONException;
+    long update(String coloumnName, String[] whereArgs, JSONObject request) throws JSONException;
     JSONArray read(String table, String[] coloumns, String selection, String selectionArgs) throws JSONException;
 }

@@ -1,7 +1,5 @@
 package org.sunbird.sync;
 
-import android.util.Log;
-
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -14,8 +12,11 @@ import org.sunbird.sync.db.DbService;
 import org.sunbird.sync.db.DbServiceImpl;
 import org.sunbird.sync.model.HttpResponse;
 import org.sunbird.sync.model.NetworkQueueModel;
+import org.sunbird.sync.model.Request;
 import org.sunbird.sync.network.ApiService;
 import org.sunbird.sync.network.ApiServiceImpl;
+import org.sunbird.sync.preference.PreferenceService;
+import org.sunbird.sync.preference.PreferenceServiceImpl;
 import org.sunbird.sync.queue.NetworkQueue;
 import org.sunbird.sync.queue.NetworkQueueImpl;
 
@@ -27,11 +28,10 @@ import java.util.ArrayList;
 public class SyncPlugin extends CordovaPlugin {
 
     private static final String TAG = "Cordova-Plugin-SYNC";
-    public static String syncSuccessCallBack = "sbsync.onSyncSucces";
-    private static CordovaWebView mWebView;
     private DbService mDbService;
     private NetworkQueue mNetworkQueue;
     private ApiService mApiService;
+    private PreferenceService mPreferenceService;
     private boolean isSyncing;
     private ArrayList<CallbackContext> mHandler = new ArrayList<>();
     private JSONObject mLastEvent;
@@ -42,7 +42,7 @@ public class SyncPlugin extends CordovaPlugin {
         mDbService = new DbServiceImpl();
         mNetworkQueue = new NetworkQueueImpl(mDbService);
         mApiService = new ApiServiceImpl();
-        mWebView = webView;
+        mPreferenceService = new PreferenceServiceImpl(cordova.getActivity());
     }
 
     @Override
@@ -52,10 +52,10 @@ public class SyncPlugin extends CordovaPlugin {
             return true;
         } else if (action.equals("enqueue")) {
             this.enqueue(args, callbackContext);
-            return  true;
+            return true;
         } else if (action.equals("onSyncSucces")) {
             mHandler.add(callbackContext);
-            return  true;
+            return true;
         }
 
         return false;
@@ -83,8 +83,8 @@ public class SyncPlugin extends CordovaPlugin {
                                 mDbService.insert(insertObj);
                             }
                         }
-                    }catch (Exception e){
-
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -100,28 +100,31 @@ public class SyncPlugin extends CordovaPlugin {
                         isSyncing = true;
                         NetworkQueueModel networkQueueModel = mNetworkQueue.peek();
                         HttpResponse httpResponse = mApiService.process(networkQueueModel.getRequest());
-                        if (networkQueueModel.getRequest().getPath().contains("telemetry")) {
-                            postProcessTelemetrySync(httpResponse);
-                        }
-
                         if (httpResponse != null) {
                             if (httpResponse.getStatus() >= 200 && httpResponse.getStatus() < 300) {
-                                mNetworkQueue.dequeue();
+                                if (networkQueueModel.getRequest().getPath().contains("telemetry")) {
+                                    postProcessTelemetrySync(httpResponse);
+                                }
+                                mNetworkQueue.dequeue(false);
                                 JSONObject config = networkQueueModel.getConfig();
                                 if (config != null && config.optBoolean("shouldPublishResult")) {
                                     mLastEvent = new JSONObject();
-                                    mLastEvent.put("syncedEventCount",networkQueueModel.getEventCount());
+                                    mLastEvent.put("syncedEventCount", networkQueueModel.getEventCount());
                                     consumeEvents();
                                 }
                             } else if (httpResponse.getStatus() == 400) {
-                                mNetworkQueue.dequeue();
+                                mNetworkQueue.dequeue(false);
                                 mLastEvent = new JSONObject();
-                                mLastEvent.put("error","BAD_REQUEST");
+                                mLastEvent.put("error", "BAD_REQUEST");
                                 consumeEvents();
-                            }
-                            else if (httpResponse.getStatus() == -3) {
+                                continue;
+                            } else if (httpResponse.getStatus() == 401) {
+                                handleUnAuthorizedError(networkQueueModel, httpResponse);
+                                mNetworkQueue.dequeue(true);
+                                continue;
+                            } else if (httpResponse.getStatus() == -3) {
                                 mLastEvent = new JSONObject();
-                                mLastEvent.put("error","NETWORK_ERROR");
+                                mLastEvent.put("error", "NETWORK_ERROR");
                                 consumeEvents();
                                 break;
                             }
@@ -129,13 +132,36 @@ public class SyncPlugin extends CordovaPlugin {
                     }
                     isSyncing = false;
                 } catch (Exception e) {
-
+                    e.printStackTrace();
+                    isSyncing = false;
                 }
-
             }
         });
 
 
+    }
+
+    private void handleUnAuthorizedError(NetworkQueueModel networkQueueModel, HttpResponse httpResponse) throws JSONException {
+        Request request = networkQueueModel.getRequest();
+        JSONObject headers = request.getHeaders();
+        String response = httpResponse.getError();
+        JSONObject responseObject = null;
+        if (response != null) {
+            responseObject = new JSONObject(response);
+        }
+
+        if (responseObject != null && "Unauthorized".equalsIgnoreCase(responseObject.optString("message"))) {
+            headers.put("Authorization", "Bearer " + mPreferenceService.getBearerToken());
+        } else {
+            if (mPreferenceService.getUserToken() != null) {
+                headers.put("X-Authenticated-User-Token", mPreferenceService.getUserToken());
+            }
+        }
+
+        request.setHeaders(headers);
+        JSONObject model = new JSONObject();
+        model.put("request", request.toJSON().toString());
+        mDbService.update("msg_id", new String[]{networkQueueModel.getId()}, model);
     }
 
     private void enqueue(JSONArray args, CallbackContext callbackContext) {
@@ -146,11 +172,8 @@ public class SyncPlugin extends CordovaPlugin {
                     JSONObject request = (JSONObject) args.get(1);
                     boolean shouldSync = args.getBoolean(2);
                     String networkRequest = request.getString("request");
-                    String msgId = request.getString("msg_id");
                     JSONObject jsonNetworkObject = new JSONObject(networkRequest);
                     jsonNetworkObject.put("body", data);
-
-
                     request.put("request", jsonNetworkObject.toString());
                     mDbService.insert(request);
                     if (!isSyncing && shouldSync) {

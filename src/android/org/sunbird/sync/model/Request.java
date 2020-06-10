@@ -1,5 +1,6 @@
 package org.sunbird.sync.model;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -38,6 +39,10 @@ public class Request {
         return headers;
     }
 
+    public void setHeaders(JSONObject headers){
+        this.headers = headers;
+    }
+
     public Object getBody() {
         return body;
     }
@@ -56,5 +61,16 @@ public class Request {
                 ", body='" + body + '\'' +
                 ", serializer='" + serializer + '\'' +
                 '}';
+    }
+
+    public JSONObject toJSON() throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("host", host);
+        request.put("type", type);
+        request.put("path", path);
+        request.put("headers", headers);
+        request.put("serializer", serializer);
+        request.put("body", body);
+        return request;
     }
 }

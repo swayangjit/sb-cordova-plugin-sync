@@ -23,9 +23,14 @@ public class DbServiceImpl implements DbService {
     }
 
     @Override
-    public int delete(String id) throws JSONException {
+    public long delete(String id) throws JSONException {
         JSONArray resultArray = getOperator().execute("DELETE from network_queue where msg_id='" +id+"'");
         return 0;
+    }
+
+    @Override
+    public long update(String selection, String[] whereArgs,JSONObject model) throws JSONException {
+        return getOperator().update("network_queue", selection+" = ?", whereArgs, model);
     }
 
     @Override
