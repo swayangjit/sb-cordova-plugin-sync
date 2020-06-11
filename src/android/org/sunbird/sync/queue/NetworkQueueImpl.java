@@ -31,6 +31,7 @@ public class NetworkQueueImpl implements NetworkQueue {
                     String requestStr = jsonObject.optString("request");
                     Long id = jsonObject.optLong("_id");
                     String msgId = jsonObject.optString("msg_id");
+                    String type = jsonObject.optString("type");
                     Integer priority = jsonObject.optInt("priority");
                     Integer eventCount = jsonObject.optInt("item_count");
                     String timestamp = jsonObject.optString("timestamp");
@@ -39,11 +40,11 @@ public class NetworkQueueImpl implements NetworkQueue {
                     String host = requestJson.optString("host");
                     Object body = requestJson.get("body");
                     String path = requestJson.optString("path");
-                    String type = requestJson.optString("type");
+                    String requestType = requestJson.optString("type");
                     String serializer = requestJson.optString("serializer");
                     JSONObject headers = requestJson.optJSONObject("headers");
-                    Request request = new Request(host, path, type, headers, serializer, body);
-                    NetworkQueueModel networkQueueModel = new NetworkQueueModel(msgId, priority, Long.valueOf(timestamp), config, eventCount, request);
+                    Request request = new Request(host, path, requestType, headers, serializer, body);
+                    NetworkQueueModel networkQueueModel = new NetworkQueueModel(msgId, type, priority, Long.valueOf(timestamp), config, eventCount, request);
                     mPriorityNetworkModelQueue.add(networkQueueModel);
                 }
             }

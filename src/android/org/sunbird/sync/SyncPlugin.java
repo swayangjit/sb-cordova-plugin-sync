@@ -61,6 +61,85 @@ public class SyncPlugin extends CordovaPlugin {
         return false;
     }
 
+    private void syncNetworkQueue(CallbackContext callbackContext) {
+        cordova.getThreadPool().execute(new Runnable() {
+            public void run() {
+                try {
+                    mNetworkQueue.seed();
+                    while (!mNetworkQueue.isEmpty()) {
+                        isSyncing = true;
+                        NetworkQueueModel networkQueueModel = mNetworkQueue.peek();
+                        HttpResponse httpResponse = mApiService.process(networkQueueModel.getRequest());
+                        if (httpResponse != null) {
+                            if (httpResponse.getStatus() >= 200 && httpResponse.getStatus() < 300) {
+                                handlePostAPIActions(networkQueueModel.getType(), httpResponse);
+                                mNetworkQueue.dequeue(false);
+                                publishSuccessResult(networkQueueModel, httpResponse);
+                            } else if (httpResponse.getStatus() == 400) {
+                                mNetworkQueue.dequeue(false);
+                                publishEvent("error", "BAD_REQUEST");
+                                continue;
+                            } else if (httpResponse.getStatus() == 401) {
+                                handleUnAuthorizedError(networkQueueModel, httpResponse);
+                                mNetworkQueue.dequeue(true);
+                                continue;
+                            } else if (httpResponse.getStatus() == -3) {
+                                publishEvent("error", "NETWORK_ERROR");
+                                break;
+                            }
+                        }
+                    }
+                    isSyncing = false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isSyncing = false;
+                }
+            }
+        });
+    }
+
+    private void handlePostAPIActions(String type, HttpResponse httpResponse) throws JSONException {
+        if (type.equalsIgnoreCase("telemetry")) {
+            postProcessTelemetrySync(httpResponse);
+        }
+    }
+
+    public void publishSuccessResult(NetworkQueueModel networkQueueModel, HttpResponse response) throws JSONException {
+        JSONObject config = networkQueueModel.getConfig();
+        String type = networkQueueModel.getType();
+        if (config != null && config.optBoolean("shouldPublishResult")) {
+            if (type.equalsIgnoreCase("telemetry")) {
+                publishEvent("syncedEventCount", networkQueueModel.getEventCount());
+            } else if (type.equalsIgnoreCase("course_progress")) {
+                String responseStr = response.getBody();
+                JSONObject result = getResultFromAPIResponse(responseStr);
+                publishEvent("courseProgressResponse", result);
+            }else if (type.equalsIgnoreCase("course_assesment")) {
+                String responseStr = response.getBody();
+                JSONObject result = getResultFromAPIResponse(responseStr);
+                publishEvent("courseAssesmentResponse", result);
+            }
+
+        }
+    }
+
+    private JSONObject getResultFromAPIResponse(String body) {
+        JSONObject result;
+        try {
+            JSONObject jsonObject = new JSONObject(body);
+            result = jsonObject.optJSONObject("result");
+        } catch (Exception e) {
+            return null;
+        }
+        return result;
+    }
+
+    private void publishEvent(String key, Object value) throws JSONException {
+        mLastEvent = new JSONObject();
+        mLastEvent.put(key, value);
+        consumeEvents();
+    }
+
     private void postProcessTelemetrySync(HttpResponse httpResponse) throws JSONException {
         JSONArray jsonArray = mDbService.read("no_sql", new String[]{"value"}, "key = ?", "last_synced_device_register_is_successful");
         if (jsonArray != null && jsonArray.optJSONObject(0) != null) {
@@ -89,56 +168,6 @@ public class SyncPlugin extends CordovaPlugin {
                 }
             }
         }
-    }
-
-    private void syncNetworkQueue(CallbackContext callbackContext) {
-        cordova.getThreadPool().execute(new Runnable() {
-            public void run() {
-                try {
-                    mNetworkQueue.seed();
-                    while (!mNetworkQueue.isEmpty()) {
-                        isSyncing = true;
-                        NetworkQueueModel networkQueueModel = mNetworkQueue.peek();
-                        HttpResponse httpResponse = mApiService.process(networkQueueModel.getRequest());
-                        if (httpResponse != null) {
-                            if (httpResponse.getStatus() >= 200 && httpResponse.getStatus() < 300) {
-                                if (networkQueueModel.getRequest().getPath().contains("telemetry")) {
-                                    postProcessTelemetrySync(httpResponse);
-                                }
-                                mNetworkQueue.dequeue(false);
-                                JSONObject config = networkQueueModel.getConfig();
-                                if (config != null && config.optBoolean("shouldPublishResult")) {
-                                    mLastEvent = new JSONObject();
-                                    mLastEvent.put("syncedEventCount", networkQueueModel.getEventCount());
-                                    consumeEvents();
-                                }
-                            } else if (httpResponse.getStatus() == 400) {
-                                mNetworkQueue.dequeue(false);
-                                mLastEvent = new JSONObject();
-                                mLastEvent.put("error", "BAD_REQUEST");
-                                consumeEvents();
-                                continue;
-                            } else if (httpResponse.getStatus() == 401) {
-                                handleUnAuthorizedError(networkQueueModel, httpResponse);
-                                mNetworkQueue.dequeue(true);
-                                continue;
-                            } else if (httpResponse.getStatus() == -3) {
-                                mLastEvent = new JSONObject();
-                                mLastEvent.put("error", "NETWORK_ERROR");
-                                consumeEvents();
-                                break;
-                            }
-                        }
-                    }
-                    isSyncing = false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    isSyncing = false;
-                }
-            }
-        });
-
-
     }
 
     private void handleUnAuthorizedError(NetworkQueueModel networkQueueModel, HttpResponse httpResponse) throws JSONException {

@@ -10,14 +10,16 @@ import org.json.JSONObject;
  */
 public class NetworkQueueModel implements Comparable<NetworkQueueModel>{
     private String msgId;
+    private String type;
     private Integer priority;
     private Integer eventCount;
     private Long timestamp;
     private Request request;
     private String config;
 
-    public NetworkQueueModel(String msgId, Integer priority, Long timestamp, String config, Integer eventCount, Request request) {
+    public NetworkQueueModel(String msgId, String type, Integer priority, Long timestamp, String config, Integer eventCount, Request request) {
         this.msgId = msgId;
+        this.type = type;
         this.priority = priority;
         this.timestamp = timestamp;
         this.request = request;
@@ -27,6 +29,10 @@ public class NetworkQueueModel implements Comparable<NetworkQueueModel>{
 
     public String getId() {
         return msgId;
+    }
+
+    public String getType() {
+        return type;
     }
 
     public Integer getPriority() {
