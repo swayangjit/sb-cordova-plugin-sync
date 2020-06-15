@@ -79,12 +79,15 @@ public class SyncPlugin extends CordovaPlugin {
                                 mNetworkQueue.dequeue(false);
                                 publishEvent("error", "BAD_REQUEST");
                                 continue;
-                            } else if (httpResponse.getStatus() == 401) {
+                            } else if (httpResponse.getStatus() == 401 || httpResponse.getStatus() == 403) {
                                 handleUnAuthorizedError(networkQueueModel, httpResponse);
                                 mNetworkQueue.dequeue(true);
                                 continue;
                             } else if (httpResponse.getStatus() == -3) {
                                 publishEvent("error", "NETWORK_ERROR");
+                                break;
+                            } else {
+                                publishEvent(networkQueueModel.getType()+"_error", httpResponse.getError());
                                 break;
                             }
                         }
@@ -179,7 +182,7 @@ public class SyncPlugin extends CordovaPlugin {
             responseObject = new JSONObject(response);
         }
 
-        if (responseObject != null && "Unauthorized".equalsIgnoreCase(responseObject.optString("message"))) {
+        if ((responseObject != null && "Unauthorized".equalsIgnoreCase(responseObject.optString("message"))) || httpResponse.getStatus() == 403) {
             headers.put("Authorization", "Bearer " + mPreferenceService.getBearerToken());
         } else {
             if (mPreferenceService.getUserToken() != null) {
