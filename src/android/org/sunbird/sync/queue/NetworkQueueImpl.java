@@ -42,8 +42,10 @@ public class NetworkQueueImpl implements NetworkQueue {
                     String path = requestJson.optString("path");
                     String requestType = requestJson.optString("type");
                     String serializer = requestJson.optString("serializer");
+                    int noOfFailureSync = requestJson.optInt("noOfFailureSync", 0);
                     JSONObject headers = requestJson.optJSONObject("headers");
                     Request request = new Request(host, path, requestType, headers, serializer, body);
+                    request.setNoOfFailureSync(noOfFailureSync);
                     NetworkQueueModel networkQueueModel = new NetworkQueueModel(msgId, type, priority, Long.valueOf(timestamp), config, eventCount, request);
                     mPriorityNetworkModelQueue.add(networkQueueModel);
                 }

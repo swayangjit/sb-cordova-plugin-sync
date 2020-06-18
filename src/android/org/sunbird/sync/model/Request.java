@@ -13,6 +13,7 @@ public class Request {
     private JSONObject headers;
     private Object body;
     private String serializer;
+    private int noOfFailureSync;
 
     public Request(String host, String path, String type, JSONObject headers, String serializer, Object body) {
         this.host = host;
@@ -51,6 +52,14 @@ public class Request {
         return serializer;
     }
 
+    public int getNoOfFailureSync() {
+        return noOfFailureSync;
+    }
+
+    public void setNoOfFailureSync(int noOfFailureSync) {
+        this.noOfFailureSync = noOfFailureSync;
+    }
+
     @Override
     public String toString() {
         return "Request{" +
@@ -71,6 +80,7 @@ public class Request {
         request.put("headers", headers);
         request.put("serializer", serializer);
         request.put("body", body);
+        request.put("noOfFailureSync", noOfFailureSync);
         return request;
     }
 }

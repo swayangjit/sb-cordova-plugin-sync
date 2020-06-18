@@ -35,6 +35,7 @@ public class SyncPlugin extends CordovaPlugin {
     private boolean isSyncing;
     private ArrayList<CallbackContext> mHandler = new ArrayList<>();
     private JSONObject mLastEvent;
+    private boolean isUnauthorizedErrorThrown;
 
     @Override
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -80,6 +81,19 @@ public class SyncPlugin extends CordovaPlugin {
                                 publishEvent("error", "BAD_REQUEST");
                                 continue;
                             } else if (httpResponse.getStatus() == 401 || httpResponse.getStatus() == 403) {
+                                if (networkQueueModel.getRequest().getNoOfFailureSync() >= 2) {
+                                    if(!isUnauthorizedErrorThrown){
+                                        isUnauthorizedErrorThrown = true;
+                                        publishEvent("network_queue_error", "UnAuthorized");
+                                    }
+                                } else {
+                                    Request request = networkQueueModel.getRequest();
+                                    int noOfFailureSyncs = request.getNoOfFailureSync() + 1;
+                                    request.setNoOfFailureSync(noOfFailureSyncs++);
+                                    JSONObject model = new JSONObject();
+                                    model.put("request", request.toJSON().toString());
+                                    mDbService.update("msg_id", new String[]{networkQueueModel.getId()}, model);
+                                }
                                 handleUnAuthorizedError(networkQueueModel, httpResponse);
                                 mNetworkQueue.dequeue(true);
                                 continue;
@@ -87,7 +101,7 @@ public class SyncPlugin extends CordovaPlugin {
                                 publishEvent("error", "NETWORK_ERROR");
                                 break;
                             } else {
-                                publishEvent(networkQueueModel.getType()+"_error", httpResponse.getError());
+                                publishEvent(networkQueueModel.getType() + "_error", httpResponse.getError());
                                 break;
                             }
                         }
@@ -117,7 +131,7 @@ public class SyncPlugin extends CordovaPlugin {
                 String responseStr = response.getBody();
                 JSONObject result = getResultFromAPIResponse(responseStr);
                 publishEvent("courseProgressResponse", result);
-            }else if (type.equalsIgnoreCase("course_assesment")) {
+            } else if (type.equalsIgnoreCase("course_assesment")) {
                 String responseStr = response.getBody();
                 JSONObject result = getResultFromAPIResponse(responseStr);
                 publishEvent("courseAssesmentResponse", result);
