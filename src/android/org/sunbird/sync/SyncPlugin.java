@@ -98,7 +98,7 @@ public class SyncPlugin extends CordovaPlugin {
                                 mNetworkQueue.dequeue(true);
                                 continue;
                             } else if (httpResponse.getStatus() == -3) {
-                                publishEvent("error", "NETWORK_ERROR");
+                                publishEvent(networkQueueModel.getType() + "_error", "NETWORK_ERROR");
                                 break;
                             } else {
                                 publishEvent(networkQueueModel.getType() + "_error", httpResponse.getError());
