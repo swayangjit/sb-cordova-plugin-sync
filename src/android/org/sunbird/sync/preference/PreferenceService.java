@@ -9,4 +9,6 @@ public interface PreferenceService {
     String getBearerToken();
 
     String getUserToken();
+
+    String getManagedUserToken();
 }

@@ -30,7 +30,22 @@ public class PreferenceServiceImpl implements PreferenceService {
         }
         try {
             JSONObject oauthTokenJson = new JSONObject(oauthToken);
-            return oauthTokenJson.optString("userToken");
+            return oauthTokenJson.optString("access_token");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String getManagedUserToken() {
+        String oauthToken = mSharedPrefs.getString("oauth_token", null);
+        if (oauthToken == null) {
+            return null;
+        }
+        try {
+            JSONObject oauthTokenJson = new JSONObject(oauthToken);
+            return oauthTokenJson.optString("managed_access_token");
         } catch (JSONException e) {
             e.printStackTrace();
             return null;

@@ -102,6 +102,7 @@ public class SyncPlugin extends CordovaPlugin {
                                 break;
                             } else {
                                 publishEvent(networkQueueModel.getType() + "_error", httpResponse.getError());
+                                mNetworkQueue.dequeue(false);
                                 break;
                             }
                         }
@@ -202,6 +203,9 @@ public class SyncPlugin extends CordovaPlugin {
             if (mPreferenceService.getUserToken() != null) {
                 headers.put("X-Authenticated-User-Token", mPreferenceService.getUserToken());
             }
+            if (mPreferenceService.getManagedUserToken() != null) {
+                headers.put("X-Authenticated-For", mPreferenceService.getManagedUserToken());
+            }
         }
 
         request.setHeaders(headers);
@@ -245,6 +249,9 @@ public class SyncPlugin extends CordovaPlugin {
             callback.success(mLastEvent);
         }
 
+        if(mHandler!= null){
+            mHandler.clear();
+        }
         mLastEvent = null;
     }
 
