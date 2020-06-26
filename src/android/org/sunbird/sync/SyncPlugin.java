@@ -89,9 +89,6 @@ public class SyncPlugin extends CordovaPlugin {
                                         handleUnAuthorizedError(networkQueueModel, httpResponse);
                                         mNetworkQueue.dequeue(true);
                                     }
-                                    if(networkQueueModel.getRequest().getNoOfFailureSync() >= 5){
-                                        mNetworkQueue.dequeue(false);
-                                    }
                                 } else {
                                     Request request = networkQueueModel.getRequest();
                                     int noOfFailureSyncs = request.getNoOfFailureSync() + 1;
