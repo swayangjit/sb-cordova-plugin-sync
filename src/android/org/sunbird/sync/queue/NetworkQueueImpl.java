@@ -24,6 +24,7 @@ public class NetworkQueueImpl implements NetworkQueue {
     @Override
     public void seed() {
         try {
+            mPriorityNetworkModelQueue = new PriorityQueue<>();
             JSONArray resultArray = mDbService.seed();
             if (resultArray != null) {
                 for (int i = 0; i < resultArray.length(); i++) {

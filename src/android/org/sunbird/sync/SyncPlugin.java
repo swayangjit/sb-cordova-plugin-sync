@@ -1,5 +1,6 @@
 package org.sunbird.sync;
 
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaPlugin;
@@ -77,14 +78,19 @@ public class SyncPlugin extends CordovaPlugin {
                                 mNetworkQueue.dequeue(false);
                                 publishSuccessResult(networkQueueModel, httpResponse);
                             } else if (httpResponse.getStatus() == 400) {
-                                mNetworkQueue.dequeue(false);
                                 publishEvent("error", "BAD_REQUEST");
+                                updateFailureCount(networkQueueModel);
                                 continue;
                             } else if (httpResponse.getStatus() == 401 || httpResponse.getStatus() == 403) {
                                 if (networkQueueModel.getRequest().getNoOfFailureSync() >= 2) {
                                     if(!isUnauthorizedErrorThrown){
                                         isUnauthorizedErrorThrown = true;
                                         publishEvent("network_queue_error", "UnAuthorized");
+                                        handleUnAuthorizedError(networkQueueModel, httpResponse);
+                                        mNetworkQueue.dequeue(true);
+                                    }
+                                    if(networkQueueModel.getRequest().getNoOfFailureSync() >= 5){
+                                        mNetworkQueue.dequeue(false);
                                     }
                                 } else {
                                     Request request = networkQueueModel.getRequest();
@@ -93,17 +99,18 @@ public class SyncPlugin extends CordovaPlugin {
                                     JSONObject model = new JSONObject();
                                     model.put("request", request.toJSON().toString());
                                     mDbService.update("msg_id", new String[]{networkQueueModel.getId()}, model);
+                                    handleUnAuthorizedError(networkQueueModel, httpResponse);
+                                    mNetworkQueue.dequeue(true);
                                 }
-                                handleUnAuthorizedError(networkQueueModel, httpResponse);
-                                mNetworkQueue.dequeue(true);
                                 continue;
                             } else if (httpResponse.getStatus() == -3) {
                                 publishEvent(networkQueueModel.getType() + "_error", "NETWORK_ERROR");
+                                mNetworkQueue.dequeue(true);
                                 break;
                             } else {
                                 publishEvent(networkQueueModel.getType() + "_error", httpResponse.getError());
-                                mNetworkQueue.dequeue(false);
-                                break;
+                                updateFailureCount(networkQueueModel);
+                                continue;
                             }
                         }
                     }
@@ -114,6 +121,20 @@ public class SyncPlugin extends CordovaPlugin {
                 }
             }
         });
+    }
+
+    private void updateFailureCount(NetworkQueueModel networkQueueModel) throws JSONException{
+        if (networkQueueModel.getRequest().getNoOfFailureSync() >= 5 ) {
+            mNetworkQueue.dequeue(false);
+        } else {
+            Request request = networkQueueModel.getRequest();
+            int noOfFailureSyncs = request.getNoOfFailureSync() + 1;
+            request.setNoOfFailureSync(noOfFailureSyncs++);
+            JSONObject model = new JSONObject();
+            model.put("request", request.toJSON().toString());
+            mDbService.update("msg_id", new String[]{networkQueueModel.getId()}, model);
+            mNetworkQueue.dequeue(true);
+        }
     }
 
     private void handlePostAPIActions(String type, HttpResponse httpResponse) throws JSONException {
