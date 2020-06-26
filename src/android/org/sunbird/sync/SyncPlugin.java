@@ -79,7 +79,7 @@ public class SyncPlugin extends CordovaPlugin {
                                 publishSuccessResult(networkQueueModel, httpResponse);
                             } else if (httpResponse.getStatus() == 400) {
                                 publishEvent("error", "BAD_REQUEST");
-                                updateFailureCount(networkQueueModel);
+                                mNetworkQueue.dequeue(true);
                                 continue;
                             } else if (httpResponse.getStatus() == 401 || httpResponse.getStatus() == 403) {
                                 if (networkQueueModel.getRequest().getNoOfFailureSync() >= 2) {
@@ -109,7 +109,7 @@ public class SyncPlugin extends CordovaPlugin {
                                 break;
                             } else {
                                 publishEvent(networkQueueModel.getType() + "_error", httpResponse.getError());
-                                updateFailureCount(networkQueueModel);
+                                mNetworkQueue.dequeue(true);
                                 continue;
                             }
                         }
