@@ -88,6 +88,9 @@ public class SyncPlugin extends CordovaPlugin {
                                         publishEvent("network_queue_error", "UnAuthorized");
                                         handleUnAuthorizedError(networkQueueModel, httpResponse);
                                         mNetworkQueue.dequeue(true);
+                                    } else{
+                                        handleUnAuthorizedError(networkQueueModel, httpResponse);
+                                        mNetworkQueue.dequeue(true);
                                     }
                                 } else {
                                     Request request = networkQueueModel.getRequest();
